@@ -34,11 +34,11 @@ class LMStudioAgent:
 
     def respond(self, message):
         self.history.append({"role": "user", "content": message})
-        
+
         # Calculate the number of tokens to include in the context
         context_tokens = int(TOKEN_LIMIT * 0.5)
         context = self._get_context(context_tokens)
-        
+
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=context,
@@ -53,7 +53,7 @@ class LMStudioAgent:
                 socketio.emit('new_message', {'role': self.name, 'content': new_message["content"]})
 
         self.history.append(new_message)
-        
+
         # Save the final message to a CSV file
         # try to save the message to a csv file, in case it fails, it will not break the code
         try:
@@ -63,7 +63,7 @@ class LMStudioAgent:
             print("Error saving message to CSV")
             # skip the line and continue
             pass
-        
+
         return new_message["content"]
 
     def _get_context(self, context_tokens):
@@ -106,28 +106,30 @@ def index():
     return render_template('index.html')
 
 @socketio.on('start_conversation')
+@socketio.on('start_conversation')
 def handle_start_conversation(data):
     topic = data['topic']
+    agent_name = data.get('agent', 'Jack Sparrow')  # Default to Jack Sparrow if no agent specified
     socketio.emit('new_message', {'role': 'system', 'content': f"Starting conversation on topic: {topic}"})
 
-    for agent in agents:
-        agent.reset_history()
-        agent.history.append({"role": "user", "content": topic})
+    # Find the selected agent
+    selected_agent = next((agent for agent in agents if agent.name == agent_name), None)
+    if selected_agent:
+        selected_agent.reset_history()
+        selected_agent.history.append({"role": "user", "content": topic})
+        response = selected_agent.respond(topic)  # Use the selected agent to respond to the topic
+        socketio.emit('new_message', {'role': selected_agent.name, 'content': response})
 
-    threading.Thread(target=run_conversation, args=(agents, topic)).start()
 
-def run_conversation(agents, initial_message, num_turns=15):
-    message = initial_message
-    last_agent = None
-    
+# every agent talks one time each topic
+def run_conversation(selected_agent, topic, num_turns=1):
+    message = topic
     for _ in range(num_turns):
-        available_agents = [agent for agent in agents if agent != last_agent]
-        agent = random.choice(available_agents)
-        response = agent.respond(message)
-        socketio.emit('new_message', {'role': agent.name, 'content': response})
+        response = selected_agent.respond(message)
+        socketio.emit('new_message', {'role': selected_agent.name, 'content': response})
         message = response
-        last_agent = agent
         time.sleep(1)  # Add a delay between messages
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
+
