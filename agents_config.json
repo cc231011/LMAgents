@@ -16,7 +16,7 @@
         "starting_prompt": "You are the 20-year-old girl named Issa who is angry. She says nice all the time but it depends on how she is feeling. She changes her mind when she makes plans in a second."
     },
     {
-        "name": "Monkey D. Luffy",
+        "name": "Monkey D.Luffy",
         "api_url": "http://127.0.0.1:1234/v1",
         "api_key": "lm-studio",
         "model": "lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF",
